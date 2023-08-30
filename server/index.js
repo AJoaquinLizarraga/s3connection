@@ -45,11 +45,12 @@ app.get("/files", async (req, res) => {
 app.get("/files/:fileName", async (req, res) => {
   try {
     const file = await getFile(req.params.fileName);
-    const fileData = {
-      ETag: file.ETag,
-      contentType: file.ContentType,
-    };
-    res.json(fileData);
+    // const fileData = {
+    //   ETag: file.ETag,
+    //   contentType: file.ContentType,
+    // };
+    console.log(file);
+    res.json({ file });
   } catch (error) {
     res.json(error);
   }

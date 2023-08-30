@@ -3,6 +3,7 @@ import {
   PutObjectCommand,
   ListObjectsV2Command,
   GetObjectCommand,
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import fs from "fs";
 import dotenv from "dotenv";
@@ -23,10 +24,17 @@ const client = new S3Client({
     secretAccessKey: AWS_SECRET_ACCESS_KEYID,
   },
 });
+const desiredWidth = 800;
+const desiredHeight = 600;
 
 const uploadFile = async (file) => {
   try {
     const stream = fs.createReadStream(file?.tempFilePath);
+
+    await sharp(file?.tempFilePath)
+      .resize(desiredWidth, desiredHeight)
+      .toBuffer()
+      .toFile(`./uploads/newImage/${fileName}`);
 
     const uploadParams = {
       Bucket: AWS_BUCKET_NAME,
@@ -36,7 +44,7 @@ const uploadFile = async (file) => {
     const command = new PutObjectCommand(uploadParams);
     return await client.send(command);
   } catch (error) {
-    throw error({ error: error.message });
+    throw { error: error.message };
   }
 };
 
@@ -77,13 +85,28 @@ const downloadFile = async (filename) => {
     throw error({ error: error.message });
   }
 };
+
 const getFileURL = async (filename) => {
-  const command = new GetObjectCommand({
-    Bucket: AWS_BUCKET_NAME,
-    Key: filename,
-  });
-  return await getSignedUrl(client, command, { expiresIn: 120 });
+  try {
+    const command = new GetObjectCommand({
+      Bucket: AWS_BUCKET_NAME,
+      Key: filename,
+    });
+    return await getSignedUrl(client, command, { expiresIn: 120 });
+  } catch (error) {
+    throw error({ error: error.message });
+  }
 };
-const deleteFile = () => {};
+const deleteFile = async (filename) => {
+  try {
+    const command = new DeleteObjectCommand({
+      Bucket: AWS_BUCKET_NAME,
+      Key: filename,
+    });
+    await client.send(command);
+  } catch (error) {
+    throw error({ error: error.message });
+  }
+};
 
 export { uploadFile, getFiles, getFile, downloadFile, getFileURL, deleteFile };
