@@ -8,6 +8,9 @@ import {
 import fs from "fs";
 import dotenv from "dotenv";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import pkg from "sharp";
+
+const sharp = pkg;
 
 dotenv.config();
 const {
@@ -26,21 +29,28 @@ const client = new S3Client({
 });
 const desiredWidth = 800;
 const desiredHeight = 600;
+const type = "jpeg";
 
 const uploadFile = async (file) => {
   try {
     const stream = fs.createReadStream(file?.tempFilePath);
+    console.log(stream);
+
+    let nombre = `${file.name.split(".")[0]}.${type}`;
 
     await sharp(file?.tempFilePath)
       .resize(desiredWidth, desiredHeight)
-      .toBuffer()
-      .toFile(`./uploads/newImage/${fileName}`);
+      .toFormat(type)
+      .toFile(`./uploads/newImage/${nombre}`);
+
+    const newStream = fs.createReadStream(`./uploads/newImage/${nombre}`);
 
     const uploadParams = {
       Bucket: AWS_BUCKET_NAME,
-      Key: file.name,
-      Body: stream,
+      Key: nombre,
+      Body: newStream,
     };
+
     const command = new PutObjectCommand(uploadParams);
     return await client.send(command);
   } catch (error) {
